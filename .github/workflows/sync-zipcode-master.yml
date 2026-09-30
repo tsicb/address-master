@@ -1,0 +1,49 @@
+name: Sync zipcode master
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/sync-zipcode-master.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download zipcode master
+        run: |
+          curl -fsSL --retry 3 \
+            "https://raw.githubusercontent.com/tsicb/tag-zip-labeler/main/zipcode_master.json" \
+            -o zipcode_master.json
+
+      - name: Validate JSON
+        run: |
+          python - <<'PY'
+          import json
+          with open("zipcode_master.json", encoding="utf-8") as f:
+              data = json.load(f)
+          if not isinstance(data, list) or not data:
+              raise SystemExit("zipcode_master.json is empty or invalid")
+          required = {"pref", "city", "address", "zip"}
+          if not required.issubset(data[0]):
+              raise SystemExit("zipcode_master.json schema is unexpected")
+          print(f"Validated {len(data):,} records")
+          PY
+
+      - name: Commit when changed
+        run: |
+          git add zipcode_master.json
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Sync zipcode master"
+          git push
