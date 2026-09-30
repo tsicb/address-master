@@ -19,7 +19,15 @@ jobs:
         run: |
           cat .github/tmp/municipality.part0.b64 \
               .github/tmp/municipality.part1.b64 \
-              .github/tmp/municipality.part2.b64 \
+              .github/tmp/municipality.part2a.b64 \
+              .github/tmp/municipality.part2b.b64 \
+              .github/tmp/municipality.part2c.b64 \
+              .github/tmp/municipality.part2d.b64 \
+              .github/tmp/municipality.part2e0.b64 \
+              .github/tmp/municipality.part2e1.b64 \
+              .github/tmp/municipality.part2e2.b64 \
+              .github/tmp/municipality.part2e3.b64 \
+              .github/tmp/municipality.part2e4.b64 \
               .github/tmp/municipality.part3.b64 \
               .github/tmp/municipality.part4.b64 \
               > /tmp/municipality.b64
@@ -39,6 +47,14 @@ jobs:
               raise SystemExit(f"Expected 1897 municipalities, got {len(munis)}")
           if any(len(code) != 5 or not code.isdigit() for code in munis):
               raise SystemExit("Invalid standard region code found")
+          samples = {
+              "01101": "札幌市中央区",
+              "12227": "浦安市",
+              "13101": "千代田区",
+          }
+          for code, expected in samples.items():
+              if munis.get(code) != expected:
+                  raise SystemExit(f"Unexpected municipality for {code}: {munis.get(code)!r}")
           print(f"Validated {len(prefs)} prefectures / {len(munis)} municipalities")
           PY
 
@@ -47,11 +63,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add municipality_master.json
-          git rm .github/tmp/municipality.part0.b64 \
-                 .github/tmp/municipality.part1.b64 \
-                 .github/tmp/municipality.part2.b64 \
-                 .github/tmp/municipality.part3.b64 \
-                 .github/tmp/municipality.part4.b64 \
-                 .github/workflows/build-municipality-master.yml
+          git rm .github/tmp/municipality.*.b64
+          git rm .github/workflows/build-municipality-master.yml
           git commit -m "Add municipality master"
           git push
