@@ -1,0 +1,57 @@
+name: Update Municipality Master
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 3 1 * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/update_municipality_master.py'
+      - '.github/workflows/update-municipality-master.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependency
+        run: pip install openpyxl==3.1.5
+
+      - name: Rebuild municipality master
+        run: python scripts/update_municipality_master.py
+
+      - name: Validate JSON
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('municipality_master.json',encoding='utf-8'))
+          assert len(d['prefectures'])==47
+          assert 1850 <= len(d['municipalities']) <= 1950
+          assert d['municipalities']['12227']=='浦安市'
+          assert d['municipalities']['13101']=='千代田区'
+          print('validation OK', len(d['municipalities']))
+          PY
+
+      - name: Commit when changed
+        run: |
+          if git diff --quiet -- municipality_master.json; then
+            echo "No municipality master changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add municipality_master.json
+          git commit -m "Update municipality master"
+          git push
