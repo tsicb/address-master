@@ -40,6 +40,10 @@ GitHub Pages上の住所関連ツールから共通利用する住所マスタ�
 
 都道府県名・市区町村名と標準地域コードの対応マスタです。
 
+更新元は総務省「全国地方公共団体コード」の「都道府県コード及び市区町村コード」Excelです。
+`scripts/update_municipality_master.py` が公式ページから現行Excelを探索してJSONを再生成し、
+`.github/workflows/update-municipality-master.yml` が毎月1日に実行します。差分がある場合だけ自動commitします。
+
 構造:
 
 ```json
@@ -71,3 +75,15 @@ GitHub Pages上の住所関連ツールから共通利用する住所マスタ�
 
 各Pagesアプリは起動時にマスタを先読みし、用途別の検索インデックスをブラウザメモリ上に構築します。
 CSV/XLSXの行処理中には外部APIへ問い合わせず、ブラウザ内で照合を完結させることを前提としています。
+
+
+## Maintenance
+
+- `zipcode_master.json`
+  - `tag-zip-labeler` のマスタを同期
+  - Workflow: `.github/workflows/sync-zipcode-master.yml`
+- `municipality_master.json`
+  - 総務省の公式Excelから再生成
+  - Script: `scripts/update_municipality_master.py`
+  - Workflow: `.github/workflows/update-municipality-master.yml`
+  - 毎月1日 + 手動実行
