@@ -146,12 +146,25 @@ def main():
     for code in remove:
         by_code.pop(code,None)
 
+    # Keep address-friendly hierarchy from the existing master when the official
+    # simple municipality name is its suffix. The Soumu workbook may contain
+    # "榛東村" while postal/full-address data commonly uses "北群馬郡榛東村".
+    # Code additions/removals still follow the official workbook.
+    existing_municipalities={}
+    if OUT.exists():
+        try:
+            existing=json.loads(OUT.read_text(encoding="utf-8"))
+            existing_municipalities=existing.get("municipalities",{})
+        except Exception as e:
+            print(f"warning: existing master could not be read: {e}", file=sys.stderr)
+
     prefectures={}
     municipalities={}
     for std,(pref,city) in sorted(by_code.items()):
         p2=std[:2]
         prefectures[p2]=pref
-        municipalities[std]=city
+        old_name=existing_municipalities.get(std,"")
+        municipalities[std]=old_name if old_name and old_name.endswith(city) else city
 
     if len(prefectures)!=47:
         raise RuntimeError(f"expected 47 prefectures, got {len(prefectures)}")
